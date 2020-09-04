@@ -1,7 +1,7 @@
 /* tslint:disable:no-trailing-whitespace */
 import {Request, Response} from 'express';
 
-
+const stripe = require('stripe')(process.env.STRIPE_PRIVATE_KEY);
 
 interface RequestInfo {
   courseId: string;
@@ -23,13 +23,16 @@ export async function createCheckoutSession(req: Request, res: Response) {
 
     console.log(sessionConfig);
 
-    //const session = await stripe.checkout.sessions.create(sessionConfig);
+    const session = await stripe.checkout.sessions.create(sessionConfig);
 
-    // /console.log(session);
+    console.log(session);
 
 
 
-    res.status(200).send();
+    res.status(200).json({
+      stripeCheckoutSessionId: session.id,
+      stripePublicKey: process.env.STRIPE_PUBLIC_KEY
+    });
   } catch (e) {
     console.log('Error', e);
     res.status(500).json({error: 'Error'});
@@ -46,9 +49,6 @@ function setupPurchaseCourseSession(info: RequestInfo) {
     currency: 'aud',
     quantity: 2,
   }];
-
-
-
 
   return config;
 }

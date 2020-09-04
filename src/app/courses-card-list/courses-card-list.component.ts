@@ -6,6 +6,7 @@ import {AngularFireAuth} from '@angular/fire/auth';
 import {map} from 'rxjs/operators';
 import {Observable} from 'rxjs';
 import {CheckoutService} from '../services/checkout.service';
+import {CheckoutSession} from '../model/checkout-session.model';
 
 @Component({
   selector: 'courses-card-list',
@@ -49,16 +50,15 @@ export class CoursesCardListComponent implements OnInit {
 
     this.checkout.startCourseCheckoutSession(course.id)
       .subscribe(
-        () => {
-          console.log("Stripe init...");
+        session => {
+          this.checkout.redirectToCheckout(session);
         },
         err => {
-          console.log("Error", err)
+          console.log("Error", err);
           this.purchaseStarted = false;
         }
       );
   }
-
 }
 
 
