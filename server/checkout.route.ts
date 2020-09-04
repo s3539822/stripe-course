@@ -1,6 +1,7 @@
 /* tslint:disable:no-trailing-whitespace */
 import {Request, Response} from 'express';
-import {getDocData} from './database';
+import {db, getDocData} from './database';
+import {Timestamp} from '@google-cloud/firestore';
 
 const stripe = require('stripe')(process.env.STRIPE_PRIVATE_KEY);
 
@@ -16,21 +17,28 @@ export async function createCheckoutSession(req: Request, res: Response) {
       callbackUrl: req.body.callbackUrl
     };
 
+    const purchaseSession = await db.collection('purchasedSessions').doc();
+
+    const checkoutSessionData: any = {
+      status: 'ongoing',
+      created: Timestamp.now(),
+    };
+
+    if (info.courseId) {
+      checkoutSessionData.courseId = info.courseId;
+    }
+
+    await purchaseSession.set(checkoutSessionData);
+
     let sessionConfig;
 
     if (info.courseId) {
       const course = await getDocData(`courses/${info.courseId}`);
 
-      sessionConfig = setupPurchaseCourseSession(info, course);
+      sessionConfig = setupPurchaseCourseSession(info, course, purchaseSession.id);
     }
 
-    console.log(sessionConfig);
-
     const session = await stripe.checkout.sessions.create(sessionConfig);
-
-    console.log(session);
-
-
 
     res.status(200).json({
       stripeCheckoutSessionId: session.id,
@@ -42,8 +50,8 @@ export async function createCheckoutSession(req: Request, res: Response) {
   }
 }
 
-function setupPurchaseCourseSession(info: RequestInfo, course) {
-  const config = setupBaseSessionConfig(info);
+function setupPurchaseCourseSession(info: RequestInfo, course, sessionId: string) {
+  const config = setupBaseSessionConfig(info, sessionId);
 
   config.line_items = [{
     name: course.titles.description,
@@ -56,11 +64,12 @@ function setupPurchaseCourseSession(info: RequestInfo, course) {
   return config;
 }
 
-function setupBaseSessionConfig(info: RequestInfo) {
+function setupBaseSessionConfig(info: RequestInfo, sessionId: string) {
   const config: any = {
     payment_method_types: ['card'],
     success_url: `${info.callbackUrl}/?purchaseResult=success`,
-    cancel_url: `${info.callbackUrl}/?purchaseResult=failed`
+    cancel_url: `${info.callbackUrl}/?purchaseResult=failed`,
+    client_reference_id: sessionId
   };
 
   return config;
