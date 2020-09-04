@@ -4,6 +4,8 @@ import {HttpClient, HttpHeaders} from '@angular/common/http';
 import {Observable} from 'rxjs';
 import {CheckoutSession} from '../model/checkout-session.model';
 import {AngularFireAuth} from '@angular/fire/auth';
+import {AngularFirestore} from '@angular/fire/firestore';
+import {filter, first} from 'rxjs/operators';
 
 declare const Stripe;
 
@@ -15,7 +17,7 @@ export class CheckoutService {
 
   private jwtAuth: string;
 
-  constructor(private http:HttpClient, private afAuth: AngularFireAuth) {
+  constructor(private http:HttpClient, private afAuth: AngularFireAuth, private afs: AngularFirestore) {
 
     afAuth.idToken.subscribe(jwt => this.jwtAuth = jwt);
   }
@@ -52,5 +54,14 @@ export class CheckoutService {
     stripe.redirectToCheckout({
       sessionId: session.stripeCheckoutSessionId
     });
+  }
+
+  waitForPurchaseCompleted(onGoingPurchaseSessionId: string):Observable<any> {
+    return this.afs.doc<any>(`purchasedSessions/${onGoingPurchaseSessionId}`)
+      .valueChanges()
+      .pipe(
+        filter(purchase => purchase.status === 'completed'),
+        first()
+      );
   }
 }
