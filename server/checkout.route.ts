@@ -1,5 +1,6 @@
 /* tslint:disable:no-trailing-whitespace */
 import {Request, Response} from 'express';
+import {getDocData} from './database';
 
 const stripe = require('stripe')(process.env.STRIPE_PRIVATE_KEY);
 
@@ -18,7 +19,9 @@ export async function createCheckoutSession(req: Request, res: Response) {
     let sessionConfig;
 
     if (info.courseId) {
-      sessionConfig = setupPurchaseCourseSession(info);
+      const course = await getDocData(`courses/${info.courseId}`);
+
+      sessionConfig = setupPurchaseCourseSession(info, course);
     }
 
     console.log(sessionConfig);
@@ -39,15 +42,15 @@ export async function createCheckoutSession(req: Request, res: Response) {
   }
 }
 
-function setupPurchaseCourseSession(info: RequestInfo) {
+function setupPurchaseCourseSession(info: RequestInfo, course) {
   const config = setupBaseSessionConfig(info);
 
   config.line_items = [{
-    name: 'sdf',
-    description: 'fds',
-    amount: 1500,
+    name: course.titles.description,
+    description: course.titles.longDescription,
+    amount: course.price * 100,
     currency: 'aud',
-    quantity: 2,
+    quantity: 1,
   }];
 
   return config;
