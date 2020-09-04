@@ -1,6 +1,5 @@
 import { Component, OnInit } from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
-import {CheckoutService} from '../services/checkout.service';
 
 @Component({
   selector: 'stripe-checkout',
@@ -9,36 +8,18 @@ import {CheckoutService} from '../services/checkout.service';
 })
 export class StripeCheckoutComponent implements OnInit {
 
-  message = 'Waiting for purchase to complete...';
+  message = "Waiting for purchase to complete...";
 
   waiting = true;
 
   constructor(
     private route: ActivatedRoute,
-    private router: Router,
-    private checkout: CheckoutService) {
+    private router: Router) {
 
   }
 
   ngOnInit() {
-    const result = this.route.snapshot.queryParamMap.get('purchaseResult');
 
-    if (result === 'success') {
-      const ongoingPurchaseSessionId = this.route.snapshot.queryParamMap.get('ongoingPurchaseSessionId');
-
-      this.checkout.waitForPurchaseCompleted(ongoingPurchaseSessionId)
-        .subscribe(
-          () => {
-            this.waiting = false;
-            this.message = 'Purchase SUCCESSUL. redirecting...';
-            setTimeout(() => this.router.navigateByUrl('/courses'), 3000);
-         });
-
-    } else {
-      this.waiting = false;
-      this.message = 'Purchase Cancelled or Failed, redirecting...';
-      setTimeout(() => this.router.navigateByUrl('/courses'), 3000);
-    }
   }
 
 }
