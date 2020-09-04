@@ -2,6 +2,8 @@
 import * as express from 'express';
 import {Application} from 'express';
 import {createCheckoutSession} from './checkout.route';
+import {getUserMiddleWare} from './get-user.middleware';
+import {stripeWebhooks} from './stripe-webhooks.route';
 
 export function initServer() {
 
@@ -13,7 +15,8 @@ export function initServer() {
     res.status(200).send('<h1>API is up and running!</h1>');
   });
 
-  app.route('/api/checkout').post(bodyParser.json(), createCheckoutSession);
+  app.route('/api/checkout').post(bodyParser.json(), getUserMiddleWare, createCheckoutSession);
+  app.route('/stripe-webhooks').post(bodyParser.raw({type: 'application/json'}), stripeWebhooks);
 
   const PORT = process.env.PORT || 9000;
 

@@ -8,20 +8,30 @@ const stripe = require('stripe')(process.env.STRIPE_PRIVATE_KEY);
 interface RequestInfo {
   courseId: string;
   callbackUrl: string;
+  userId: string;
 }
 
 export async function createCheckoutSession(req: Request, res: Response) {
   try {
     const info: RequestInfo = {
       courseId: req.body.courseId,
-      callbackUrl: req.body.callbackUrl
+      callbackUrl: req.body.callbackUrl,
+      userId: req['uid']
     };
+
+    if (!info.userId) {
+      const message = 'User not auth';
+      console.log(message);
+      res.status(403).json({message});
+      return;
+    }
 
     const purchaseSession = await db.collection('purchasedSessions').doc();
 
     const checkoutSessionData: any = {
       status: 'ongoing',
       created: Timestamp.now(),
+      userId: info.userId
     };
 
     if (info.courseId) {
